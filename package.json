@@ -1,0 +1,59 @@
+{
+  "name": "phish-tools",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/JPBM135/phish-tools",
+  "scripts": {
+    "build": "yarn workspaces foreach -A --parallel --topological run build",
+    "test": "yarn workspaces foreach -A --parallel --topological run test",
+    "lint": "yarn workspaces foreach -A --parallel --topological run lint",
+    "lint-fix": "yarn workspaces foreach -A --parallel --topological run lint-fix",
+    "format": "yarn workspaces foreach -A --parallel --topological run format",
+    "start": "yarn workspaces foreach -A --parallel --topological run start",
+    "fmt": "yarn format",
+    "postinstall": "is-ci || husky install",
+    "update": "yarn upgrade-interactive",
+    "migration-create": "sh bin/migration-create.sh",
+    "migration-run": "knex migrate:latest --knexfile knexfile.js",
+    "recreate-db": "node ./bin/recreate-db.mjs && yarn migration-run && yarn generate-database-types && yarn seed-run",
+    "seed-create": "knex seed:make",
+    "seed-transpile": "swc ./seeds --out-dir ./dist-seeds --strip-leading-paths",
+    "seed-send": "knex seed:run --knexfile knexfile.js",
+    "seed-clean": "rm -rf ./dist-seeds",
+    "seed-run": "yarn seed-transpile && yarn seed-send && yarn seed-clean",
+    "generate-database-types": "npx pg-to-ts generate -c postgresql://postgres:test@localhost:5432/phishtools -o packages/api/src/@types/phishtools.schema.ts && cp packages/api/src/@types/phishtools.schema.ts packages/bot/src/@types/phishtools.schema.ts"
+  },
+  "type": "module",
+  "keywords": [],
+  "author": "JPBM135 <contact@jpbm.dev>",
+  "license": "AGPL-3.0",
+  "private": true,
+  "dependencies": {
+    "@swc/cli": "^0.4.0",
+    "@swc/core": "^1.7.2",
+    "typescript": "5.4.5",
+    "yarn": "1.22.21"
+  },
+  "packages": [
+    "packages/*"
+  ],
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "discord-api-types": "^0.37.92",
+    "eslint": "8.57.0",
+    "eslint-config-neon": "0.1.62",
+    "husky": "^8.0.3",
+    "is-ci": "^3.0.1",
+    "knex": "^3.1.0",
+    "pg-to-ts": "^4.1.1",
+    "prettier": "3.2.4"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

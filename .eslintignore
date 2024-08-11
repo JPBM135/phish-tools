@@ -1,0 +1,7 @@
+.yarn/
+dist/
+node_modules/
+locales/
+!locales/en-US/
+
+src/@types/phishtools.schema.ts
