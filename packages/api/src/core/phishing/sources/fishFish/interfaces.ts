@@ -37,14 +37,19 @@ export interface FishFishWebSocketEvents {
 	['url_update']: [data: FishFishWebSocketData<WebSocketDataTypes.UrlUpdate>['data']];
 }
 
+type DomainRelatedEvents =
+	| WebSocketDataTypes.DomainCreate
+	| WebSocketDataTypes.DomainDelete
+	| WebSocketDataTypes.DomainUpdate;
+
 export interface RawWebSocketData<T extends WebSocketDataTypes> {
-	data: (T extends WebSocketDataTypes.DomainCreate | WebSocketDataTypes.DomainDelete | WebSocketDataTypes.DomainUpdate
+	data: (T extends DomainRelatedEvents
 		? {
 				domain: string;
-			}
+		  }
 		: {
 				url: string;
-			}) & {
+		  }) & {
 		added: number;
 		category: Category;
 		checked: number;

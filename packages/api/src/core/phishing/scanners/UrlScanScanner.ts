@@ -25,13 +25,26 @@ interface UrlScanJobCheckResponse {
 }
 
 export class UrlScanScanner
-	implements PhishingScanner<UrlScanJobSubmissionResponse, UrlScanJobCheckResponse, UrlScanResult>
+	implements
+		PhishingScanner<
+			UrlScanJobSubmissionResponse,
+			UrlScanJobCheckResponse,
+			UrlScanResult
+		>
 {
 	public static readonly SCANNER_NAME = 'urlscan';
 
 	public static readonly SCANNER_URL = 'https://urlscan.io/api/v1/';
 
-	async submitJob(url: string): Promise<{ job_id: string; data: UrlScanJobSubmissionResponse }> {
+	private static instance: UrlScanScanner;
+
+	public static getInstance() {
+		return (this.instance ??= new UrlScanScanner());
+	}
+
+	async submitJob(
+		url: string,
+	): Promise<{ job_id: string; data: UrlScanJobSubmissionResponse }> {
 		const result = await request(UrlScanScanner.SCANNER_URL + 'scan', {
 			method: 'POST',
 			headers: {
@@ -57,12 +70,15 @@ export class UrlScanScanner
 	}
 
 	async checkJob(job_id: string): Promise<UrlScanJobCheckResponse> {
-		const result = await request(UrlScanScanner.SCANNER_URL + 'result/' + job_id, {
-			method: 'GET',
-			headers: {
-				'API-Key': config.tokens.urlScan,
+		const result = await request(
+			UrlScanScanner.SCANNER_URL + 'result/' + job_id,
+			{
+				method: 'GET',
+				headers: {
+					'API-Key': config.tokens.urlScan,
+				},
 			},
-		});
+		);
 
 		return {
 			isFinished: result.statusCode === 200,
@@ -73,12 +89,15 @@ export class UrlScanScanner
 	}
 
 	async fetchJob(job_id: string): Promise<UrlScanResult> {
-		const result = await request(UrlScanScanner.SCANNER_URL + 'result/' + job_id, {
-			method: 'GET',
-			headers: {
-				'API-Key': config.tokens.urlScan,
+		const result = await request(
+			UrlScanScanner.SCANNER_URL + 'result/' + job_id,
+			{
+				method: 'GET',
+				headers: {
+					'API-Key': config.tokens.urlScan,
+				},
 			},
-		});
+		);
 
 		if (result.statusCode !== 200) {
 			throw new Error(`Failed to fetch job to UrlScan: ${result.statusCode}`);

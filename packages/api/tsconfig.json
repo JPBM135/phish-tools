@@ -24,7 +24,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"emitDecoratorMetadata": true,
 		"experimentalDecorators": true,
-		"target": "ES2023",
+		"target": "ESNext",
 		"useDefineForClassFields": true,
 		"skipLibCheck": true,
 		"module": "NodeNext",

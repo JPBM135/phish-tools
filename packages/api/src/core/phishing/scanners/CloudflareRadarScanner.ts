@@ -33,16 +33,24 @@ export class CloudflareRadarScanner
 			CloudflareRadarScannerResponse
 		>
 {
-	public static readonly SCANNER_NAME = 'cloudflare-radar';
+	public static readonly SCANNER_NAME = 'cloudflare_radar';
 
 	public static readonly SCANNER_URL = `https://api.cloudflare.com/client/v4/accounts/${config.tokens.cloudFlare.accountId}/urlscanner/scan`;
 
-	async submitJob(url: string): Promise<{ job_id: string; data: CloudflareRadarJobSubmissionResponse }> {
+	private static instance: CloudflareRadarScanner;
+
+	public static getInstance() {
+		return (this.instance ??= new CloudflareRadarScanner());
+	}
+
+	async submitJob(
+		url: string,
+	): Promise<{ job_id: string; data: CloudflareRadarJobSubmissionResponse }> {
 		const response = await request(CloudflareRadarScanner.SCANNER_URL, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
-				'X-Api-Key': config.tokens.cloudFlare.token,
+				Authorization: 'Bearer ' + config.tokens.cloudFlare.token,
 			},
 			body: JSON.stringify({
 				screenshotsResolutions: ['desktop', 'mobile', 'tablet'],
@@ -52,13 +60,20 @@ export class CloudflareRadarScanner
 		});
 
 		if (response.statusCode !== 200) {
-			throw new Error(`Failed to submit job to Cloudflare Radar: ${response.statusCode}`);
+			throw new Error(
+				`Failed to submit job to Cloudflare Radar: ${response.statusCode}`,
+			);
 		}
 
-		const body = (await response.body.json()) as CloudflareRadarJobSubmissionResponse;
+		const body =
+			(await response.body.json()) as CloudflareRadarJobSubmissionResponse;
 
 		if (!body.success || body.errors.length) {
-			throw new Error(`Failed to submit job to Cloudflare Radar: ${body.errors[0]?.message ?? 'Unknown error'}`);
+			throw new Error(
+				`Failed to submit job to Cloudflare Radar: ${
+					body.errors[0]?.message ?? 'Unknown error'
+				}`,
+			);
 		}
 
 		return {
@@ -68,16 +83,21 @@ export class CloudflareRadarScanner
 	}
 
 	async checkJob(job_id: string): Promise<CloudflareRadarJobCheckResponse> {
-		const response = await request(`${CloudflareRadarScanner.SCANNER_URL}/${job_id}`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Api-Key': config.tokens.cloudFlare.token,
+		const response = await request(
+			`${CloudflareRadarScanner.SCANNER_URL}/${job_id}`,
+			{
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: 'Bearer ' + config.tokens.cloudFlare.token,
+				},
 			},
-		});
+		);
 
 		if (response.statusCode !== 200 && response.statusCode !== 202) {
-			throw new Error(`Failed to check job on Cloudflare Radar: ${response.statusCode}`);
+			throw new Error(
+				`Failed to check job on Cloudflare Radar: ${response.statusCode}`,
+			);
 		}
 
 		const body = (await response.body.json()) as CloudflareRadarScannerResponse;
@@ -89,22 +109,31 @@ export class CloudflareRadarScanner
 	}
 
 	async fetchJob(job_id: string): Promise<CloudflareRadarScannerResponse> {
-		const response = await request(`${CloudflareRadarScanner.SCANNER_URL}/${job_id}`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-				'X-Api-Key': config.tokens.cloudFlare.token,
+		const response = await request(
+			`${CloudflareRadarScanner.SCANNER_URL}/${job_id}`,
+			{
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+					Authorization: 'Bearer ' + config.tokens.cloudFlare.token,
+				},
 			},
-		});
+		);
 
 		if (response.statusCode !== 200) {
-			throw new Error(`Failed to fetch job from Cloudflare Radar: ${response.statusCode}`);
+			throw new Error(
+				`Failed to fetch job from Cloudflare Radar: ${response.statusCode}`,
+			);
 		}
 
 		return (await response.body.json()) as CloudflareRadarScannerResponse;
 	}
 
-	backoffStrategy(_: number): number {
+	backoffStrategy(attempt: number): number {
+		if (attempt === 1) {
+			return Timestamp.fromSeconds(10).toMilliseconds();
+		}
+
 		return Timestamp.fromSeconds(5).toMilliseconds();
 	}
 }

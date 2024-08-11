@@ -1,6 +1,15 @@
-import type { Phishing, PhishingLogs, PhishingScans, PhishingVeredicts } from '../../@types/phishtools.schema.js';
+import type {
+	Phishing,
+	PhishingLogs,
+	PhishingScans,
+	PhishingVeredicts,
+} from '../../@types/phishtools.schema.js';
+import { SCANNERS } from '../../core/phishing/index.js';
 import { dateResolver } from '../../core/utils/dateResolver.js';
-import type { PhishToolsResolverMap, PhishToolsUnitResolver } from '../interfaces.js';
+import type {
+	PhishToolsResolverMap,
+	PhishToolsUnitResolver,
+} from '../interfaces.js';
 import type {
 	GraphQLPhishing,
 	GraphQLPhishingLogs,
@@ -8,17 +17,22 @@ import type {
 	GraphQLPhishingVeredicts,
 } from './@types/resolvers.js';
 import { CheckPhishUrl } from './queries/CheckPhishUrl.js';
+import { GetPhish } from './queries/GetPhish.js';
 
 interface PhishUnitResolvers {
 	PhishCheckResult: PhishToolsUnitResolver<Phishing, GraphQLPhishing>;
 	PhishScan: PhishToolsUnitResolver<PhishingScans, GraphQLPhishingScans>;
-	PhishVeredict: PhishToolsUnitResolver<PhishingVeredicts, GraphQLPhishingVeredicts>;
+	PhishVeredict: PhishToolsUnitResolver<
+		PhishingVeredicts,
+		GraphQLPhishingVeredicts
+	>;
 	PhishLog: PhishToolsUnitResolver<PhishingLogs, GraphQLPhishingLogs>;
 }
 
 type PhishResolvers = PhishToolsResolverMap<
 	{
 		CheckPhishUrl: typeof CheckPhishUrl;
+		GetPhish: typeof GetPhish;
 	},
 	null,
 	PhishUnitResolvers
@@ -27,6 +41,7 @@ type PhishResolvers = PhishToolsResolverMap<
 export const resolvers: PhishResolvers = {
 	Query: {
 		CheckPhishUrl,
+		GetPhish,
 	},
 	PhishCheckResult: {
 		createdAt: (parent) => dateResolver(parent.created_at),
@@ -45,6 +60,25 @@ export const resolvers: PhishResolvers = {
 		createdAt: (parent) => dateResolver(parent.created_at),
 		updatedAt: (parent) => dateResolver(parent.updated_at),
 		scanId: (parent) => parent.scan_id,
+		data: async (parent) => {
+			if (parent.status !== 'success') {
+				return null;
+			}
+
+			const source = SCANNERS[parent.source];
+
+			if (!source) {
+				return null;
+			}
+
+			const sourceInstance = source.getInstance();
+
+			const result = (await sourceInstance
+				.fetchJob(parent.scan_id)
+				.catch(() => null)) as Record<string, unknown> | null;
+
+			return result;
+		},
 	},
 	PhishVeredict: {
 		createdAt: (parent) => dateResolver(parent.created_at),

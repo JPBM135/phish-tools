@@ -3,6 +3,7 @@ import { gql } from 'graphql-tag';
 export const schema = gql`
 	type Query {
 		CheckPhishUrl(url: String!): PhishCheckResult
+		GetPhish(id: ID!): PhishCheckResult
 	}
 
 	type PhishCheckResult {
@@ -22,6 +23,7 @@ export const schema = gql`
 		status: PhishScanStatus!
 		source: PhishScanSource!
 		scanId: String!
+		data: JSON
 		createdAt: DateTime!
 		updatedAt: DateTime!
 	}
@@ -33,10 +35,10 @@ export const schema = gql`
 	}
 
 	enum PhishScanSource {
-		url_scan
-		cloudflare
+		urlscan
+		check_phish_ai
+		cloudflare_radar
 		phish_observer
-		checkphish_ai
 	}
 
 	type PhishVeredict {
@@ -50,20 +52,17 @@ export const schema = gql`
 
 	enum PhishVeredictStatus {
 		malicious
-		suspicious
 		safe
 		unknown
 		rate_limited
 	}
 
 	enum PhishVeredictSource {
-		openphish
-		phishtank
-		fishfish
-		url_haus
-		google_safe_browsing
-		google_transparency_report
-		spamhaus
+		abuse_ch
+		azroult_tracker
+		fish_fish
+		open_phish
+		transparency_report
 	}
 
 	type PhishLog {

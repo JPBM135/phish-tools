@@ -1,8 +1,7 @@
 import { setTimeout, setInterval, clearInterval } from 'node:timers';
 import { request } from 'undici';
-import logger from '../../../../logger.js';
-import { EnvironmentVariables, resolveEnv } from '../../../environment/resolveEnv.js';
 import { FishFishSource } from './fishFish.js';
+import { config } from '../../../../config.js';
 
 export interface CreateTokenResponseBody {
 	expires: number;
@@ -22,7 +21,8 @@ export interface FishFishAuthOptions {
 }
 
 export class FishFishAuth {
-	private readonly logger = FishFishSource.logger.createChildren('FishFishAuth');
+	private readonly logger =
+		FishFishSource.logger.createChildren('FishFishAuth');
 
 	/**
 	 * The API key used to authenticate requests.
@@ -31,15 +31,19 @@ export class FishFishAuth {
 
 	private _processing: boolean = false;
 
-	private _sessionToken: (Omit<FishFishSessionToken, 'expires'> & { expires: number }) | null;
+	private _sessionToken:
+		| (Omit<FishFishSessionToken, 'expires'> & { expires: number })
+		| null;
 
 	public constructor() {
-		this.apiKey = resolveEnv(EnvironmentVariables.FishFishToken, true);
+		this.apiKey = config.tokens.fishFish;
 		this._sessionToken = null;
 	}
 
 	public get sessionToken() {
-		return this._sessionToken ? this._transformSessionToken(this._sessionToken) : null;
+		return this._sessionToken
+			? this._transformSessionToken(this._sessionToken)
+			: null;
 	}
 
 	public get hasSessionToken() {
@@ -65,17 +69,22 @@ export class FishFishAuth {
 
 		this._processing = true;
 		try {
-			const response = await request(`${FishFishSource.API_BASE_URL}/users/@me/tokens`, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: this.apiKey,
+			const response = await request(
+				`${FishFishSource.API_BASE_URL}/users/@me/tokens`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: this.apiKey,
+					},
+					body: JSON.stringify({}),
 				},
-				body: JSON.stringify({}),
-			});
+			);
 
 			if (response.statusCode !== 200) {
-				throw new Error(`Failed to create session token. Status: ${response.statusCode}`);
+				throw new Error(
+					`Failed to create session token. Status: ${response.statusCode}`,
+				);
 			}
 
 			const token = (await response.body.json()) as CreateTokenResponseBody;
@@ -87,7 +96,9 @@ export class FishFishAuth {
 
 			this._createExpireTimeout();
 
-			this.logger.debug('Created session token.', { expire: this._sessionToken.expires * 1_000 });
+			this.logger.debug('Created session token.', {
+				expire: this._sessionToken.expires * 1_000,
+			});
 
 			return this._transformSessionToken(this._sessionToken);
 		} finally {
@@ -96,12 +107,9 @@ export class FishFishAuth {
 	}
 
 	private _createExpireTimeout() {
-		setTimeout(
-			() => {
-				this._sessionToken = null;
-			},
-			(this._sessionToken?.expires ?? 0) * 1_000 - Date.now(),
-		);
+		setTimeout(() => {
+			this._sessionToken = null;
+		}, (this._sessionToken?.expires ?? 0) * 1_000 - Date.now());
 	}
 
 	private _transformSessionToken(

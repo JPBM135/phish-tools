@@ -23,4 +23,8 @@ export class PhishReportScanner
 	fetchJob(_: string): Promise<unknown> {
 		throw new Error('Method not implemented.');
 	}
+
+	backoffStrategy(_: number): number {
+		throw new Error('Method not implemented.');
+	}
 }

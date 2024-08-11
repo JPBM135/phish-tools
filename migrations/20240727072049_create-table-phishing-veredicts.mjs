@@ -6,14 +6,33 @@ const TABLE = 'phishing_veredicts';
  */
 export const up = async (knex) => {
 	await knex.raw(/* sql */ `
-		create type phishing_veredicts_status as enum ('malicious', 'suspicious', 'safe', 'unknown', 'rate_limited');
-    create type phishing_veredicts_source as enum ('openphish', 'phishtank', 'fishfish', 'url_haus', 'google_safebrowsing', 'google_transparencyreport', 'spamhaus');
+		create type phishing_veredicts_status as enum (
+			'malicious',
+			'safe',
+			'unknown',
+			'rate_limited',
+			'error'
+		);
+    create type phishing_veredicts_source as enum (
+			'abuse_ch',
+			'azroult_tracker',
+			'fish_fish',
+			'open_phish',
+			'transparency_report'
+		);
 	`);
 
 	await knex.schema.createTable(TABLE, (table) => {
 		table.uuid('id').primary().defaultTo(knex.raw('uuid_generate_v4()'));
-		table.uuid('phishing_id').references('id').inTable('phishing').notNullable();
-		table.specificType('status', 'phishing_veredicts_status').defaultTo('unknown').notNullable();
+		table
+			.uuid('phishing_id')
+			.references('id')
+			.inTable('phishing')
+			.notNullable();
+		table
+			.specificType('status', 'phishing_veredicts_status')
+			.defaultTo('unknown')
+			.notNullable();
 		table.specificType('source', 'phishing_veredicts_source').notNullable();
 		table.string('veredict_id');
 		table.jsonb('metadata').defaultTo('{}').notNullable();

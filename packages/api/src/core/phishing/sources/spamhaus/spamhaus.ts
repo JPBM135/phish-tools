@@ -1,4 +1,3 @@
-import { Collection } from 'discord.js';
 import logger from '../../../../logger.js';
 import { SpamhausAuth } from './auth.js';
 import type {
@@ -20,7 +19,7 @@ export class SpamhausSource {
 		return (this.instance ??= new SpamhausSource());
 	}
 
-	public cache = new Collection<string, SpamhausCompleteDomainData>();
+	public cache = new Map<string, SpamhausCompleteDomainData>();
 
 	private readonly auth: SpamhausAuth;
 

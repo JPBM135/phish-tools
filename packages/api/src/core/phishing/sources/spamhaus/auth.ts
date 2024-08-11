@@ -1,8 +1,8 @@
 import { Buffer } from 'node:buffer';
 import { setTimeout, setInterval, clearInterval } from 'node:timers';
 import { request } from 'undici';
-import { EnvironmentVariables, resolveEnv } from '../../../environment/resolveEnv.js';
 import { SpamhausSource } from './spamhaus.js';
+import { config } from '../../../../config.js';
 
 export interface ParsedSessionToken {
 	expires: number;
@@ -21,8 +21,8 @@ export class SpamhausAuth {
 	private sessionToken: ParsedSessionToken | null;
 
 	public constructor() {
-		this.email = resolveEnv(EnvironmentVariables.SpamhausIntelEmail, true);
-		this.password = resolveEnv(EnvironmentVariables.SpamhausIntelPassword, true);
+		this.email = config.tokens.spamhausIntel.email;
+		this.password = config.tokens.spamhausIntel.password;
 		this.sessionToken = null;
 	}
 
@@ -80,12 +80,9 @@ export class SpamhausAuth {
 	}
 
 	private _createExpireTimeout() {
-		setTimeout(
-			() => {
-				this.sessionToken = null;
-			},
-			(this.sessionToken?.expires ?? 0) - Date.now(),
-		);
+		setTimeout(() => {
+			this.sessionToken = null;
+		}, (this.sessionToken?.expires ?? 0) - Date.now());
 	}
 
 	private _transformSessionToken(token: string): ParsedSessionToken {

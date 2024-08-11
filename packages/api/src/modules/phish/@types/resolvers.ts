@@ -12,8 +12,11 @@ export type GraphQLPhishing = TransformRecordToCamelCase<Phishing> & {
 	logs: PhishingLogs[];
 };
 
-export type GraphQLPhishingScans = TransformRecordToCamelCase<PhishingScans>;
+export type GraphQLPhishingScans = TransformRecordToCamelCase<PhishingScans> & {
+	data: Promise<Record<string, unknown> | null>;
+};
 
-export type GraphQLPhishingVeredicts = TransformRecordToCamelCase<PhishingVeredicts>;
+export type GraphQLPhishingVeredicts =
+	TransformRecordToCamelCase<PhishingVeredicts>;
 
 export type GraphQLPhishingLogs = TransformRecordToCamelCase<PhishingLogs>;

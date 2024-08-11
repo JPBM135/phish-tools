@@ -1,8 +1,16 @@
 import { FormData, request } from 'undici';
 import logger from '../../../../logger.js';
 import { AbuseChQueryStatus, type AbuseChHostQuery } from './interfaces.js';
+import {
+	PhishingCategory,
+	type PhishingSource,
+	type PhishingSourceCheckUrlResponse,
+} from '../interfaces.js';
+import { URL } from 'url';
 
-export class AbuseChSource {
+export class AbuseChSource implements PhishingSource<AbuseChHostQuery> {
+	public static readonly SOURCE_NAME = 'abuse_ch';
+
 	private static readonly logger = logger.createChildren('AbuseChSource');
 
 	public static API_BASE_URL = 'https://urlhaus-api.abuse.ch/v1';
@@ -13,7 +21,11 @@ export class AbuseChSource {
 		return (this.instance ??= new AbuseChSource());
 	}
 
-	public async checkDomain(domain: string): Promise<AbuseChHostQuery | null> {
+	public async checkUrl(
+		url: string,
+	): Promise<PhishingSourceCheckUrlResponse<AbuseChHostQuery>> {
+		const domain = new URL(url).hostname;
+
 		const formData = new FormData();
 		formData.append('host', domain);
 
@@ -23,16 +35,27 @@ export class AbuseChSource {
 		});
 
 		if (response.statusCode !== 200) {
-			return null;
+			return {
+				verdict: PhishingCategory.Unknown,
+				data: null,
+			};
 		}
 
 		const data = (await response.body.json()) as AbuseChHostQuery;
 
 		if (data.query_status !== AbuseChQueryStatus.Ok) {
-			AbuseChSource.logger.warn(`Failed to query AbuseCh for domain ${domain}: ${data.query_status}`);
-			return null;
+			AbuseChSource.logger.warn(
+				`Failed to query AbuseCh for domain ${domain}: ${data.query_status}`,
+			);
+			return {
+				verdict: PhishingCategory.Unknown,
+				data: null,
+			};
 		}
 
-		return data;
+		return {
+			verdict: PhishingCategory.Malicious,
+			data,
+		};
 	}
 }

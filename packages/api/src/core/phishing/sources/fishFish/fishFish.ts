@@ -1,13 +1,15 @@
 import { URLSearchParams } from 'node:url';
-import { Collection } from 'discord.js';
 import { request } from 'undici';
 import logger from '../../../../logger.js';
 import { FishFishAuth } from './auth.js';
 import { Category } from './enums.js';
 import type { FishFishDomain } from './interfaces.js';
 import { FishFishWebSocket } from './websocket.js';
+import { PhishingCategory, type PhishingSource } from '../interfaces.js';
 
-export class FishFishSource {
+export class FishFishSource implements PhishingSource<FishFishDomain> {
+	public static readonly SOURCE_NAME = 'fish_fish';
+
 	public static API_BASE_URL = 'https://api.fishfish.gg/v1';
 
 	public static WEBSOCKET_BASE_URL = 'wss://api.fishfish.gg/v1/stream/';
@@ -22,7 +24,7 @@ export class FishFishSource {
 		return (this.instance ??= new FishFishSource());
 	}
 
-	public cache = new Collection<string, FishFishDomain>();
+	public cache = new Map<string, FishFishDomain>();
 
 	private readonly auth: FishFishAuth;
 
@@ -36,53 +38,48 @@ export class FishFishSource {
 		});
 	}
 
-	public async checkBulk(domains: string[], bypassCache = false) {
-		const results: FishFishDomain[] = [];
+	public async checkUrl(domain: string): Promise<{
+		verdict: PhishingCategory;
+		data: FishFishDomain | null;
+	}> {
+		await this._assertToken();
 
-		if (bypassCache) {
-			await this.getAllDomains();
-		}
-
-		for (const domain of domains) {
-			const result = this.cache.get(domain);
-
-			if (result) {
-				results.push(result);
-			}
-		}
-
-		return results;
-	}
-
-	public async checkDomain(domain: string, bypassCache = false): Promise<FishFishDomain | null> {
-		if (!bypassCache && this.cache.has(domain)) {
-			return this.cache.get(domain)!;
-		}
-
-		return this.getDomain(domain);
-	}
-
-	public async getDomain(domain: string): Promise<FishFishDomain | null> {
 		if (this.cache.has(domain)) {
-			return this.cache.get(domain)!;
+			const data = this.cache.get(domain)!;
+			return {
+				verdict: PhishingCategory.Malicious,
+				data,
+			};
 		}
 
-		const response = await request(`${FishFishSource.API_BASE_URL}/domains/${domain}`, {
-			method: 'GET',
-			headers: {
-				Authorization: this.auth.sessionToken!.token,
+		const response = await request(
+			`${FishFishSource.API_BASE_URL}/domains/${domain}`,
+			{
+				method: 'GET',
+				headers: {
+					Authorization: this.auth.sessionToken!.token,
+				},
 			},
-		});
+		);
 
 		if (response.statusCode !== 200) {
-			return null;
+			return {
+				verdict: PhishingCategory.Unknown,
+				data: null,
+			};
 		}
 
 		const data = (await response.body.json()) as FishFishDomain;
 
 		this.cache.set(domain, data);
 
-		return data;
+		return {
+			verdict:
+				data.category === Category.Phishing
+					? PhishingCategory.Malicious
+					: PhishingCategory.Safe,
+			data,
+		};
 	}
 
 	public async getAllDomains(): Promise<FishFishDomain[]> {
@@ -99,12 +96,15 @@ export class FishFishSource {
 		params.append('category', _options.category ?? Category.Phishing);
 		params.append('full', _options.full!.toString());
 
-		const response = await request(`${FishFishSource.API_BASE_URL}/domains?${params.toString()}`, {
-			method: 'GET',
-			headers: {
-				Authorization: this.auth.sessionToken!.token,
+		const response = await request(
+			`${FishFishSource.API_BASE_URL}/domains?${params.toString()}`,
+			{
+				method: 'GET',
+				headers: {
+					Authorization: this.auth.sessionToken!.token,
+				},
 			},
-		});
+		);
 
 		if (response.statusCode !== 200) {
 			return [];

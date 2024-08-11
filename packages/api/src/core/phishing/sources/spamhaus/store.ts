@@ -1,4 +1,3 @@
-import { request } from 'undici';
 import type { SpamhausAuth } from './auth.js';
 import type { SpamhausDomainContext, SpamhausDomainDimension } from './interfaces.js';
 import { SpamhausSource } from './spamhaus.js';

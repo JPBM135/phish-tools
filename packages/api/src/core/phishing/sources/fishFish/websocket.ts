@@ -3,7 +3,6 @@ import EventEmitter from 'node:events';
 import { setTimeout, setInterval } from 'node:timers';
 import WebSocket from 'ws';
 import type { If } from '../../../../@types/utils.js';
-import logger from '../../../../logger.js';
 import type { FishFishAuth } from './auth.js';
 import { WebSocketDataTypes } from './enums.js';
 import { FishFishSource } from './fishFish.js';

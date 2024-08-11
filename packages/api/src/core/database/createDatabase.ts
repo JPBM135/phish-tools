@@ -2,7 +2,15 @@ import type { Knex } from 'knex';
 import knex from 'knex';
 import { config } from '../../config.js';
 
+let dbInstance: Knex | null = null;
+
 export async function createDatabase(): Promise<{ db: Knex }> {
+	if (dbInstance) {
+		return {
+			db: dbInstance,
+		};
+	}
+
 	const knexConfig: Knex.Config = {
 		client: 'postgresql',
 		connection: {
@@ -20,6 +28,8 @@ export async function createDatabase(): Promise<{ db: Knex }> {
 
 	const db = knex(knexConfig);
 
+	dbInstance = db;
+
 	await db.raw(`
     set timezone = 'utc';
   `);
@@ -29,7 +39,9 @@ export async function createDatabase(): Promise<{ db: Knex }> {
 	};
 }
 
-export async function createPostgresDatabase(): Promise<ReturnType<(typeof knex)['knex']>> {
+export async function createPostgresDatabase(): Promise<
+	ReturnType<(typeof knex)['knex']>
+> {
 	const knexConfig: Knex.Config = {
 		client: 'postgresql',
 		connection: {
